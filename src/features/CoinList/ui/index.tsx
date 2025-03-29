@@ -1,5 +1,5 @@
 import { useCoin } from "../../../shared";
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { useCoinList } from "../model";
 import useCoinTicker from "../model/useCoinTicker";
 
@@ -11,55 +11,7 @@ interface Market {
   like?: boolean;
 }
 
-const CoinListUi = () => {
-  const { tickerList, isLoading, error } = useCoinTicker(); // loading과 error 값 받음
-  const { markets } = useCoinList();
-  const { handleSelectMarket } = useCoin();
-
-  console.log("markets:", markets);
-
-  if (isLoading) {
-    return <div>로딩 중...</div>; // 로딩 중일 때 메시지 표시
-  }
-
-  if (error) {
-    return <div>데이터를 불러오는 중 오류가 발생했습니다: {error.message}</div>; // 에러 발생 시 메시지 표시
-  }
-
-  return (
-    <div className="h-screen w-[30rem] flex flex-col items-center justify-center bg-white text-[0.9rem] px-2">
-      <div className="w-full text-black grid grid-cols-[0.8fr_2.5fr_1fr_1fr_1fr] gap-2 place-items-end px-5 pb-1">
-        <div>코인</div>
-        <div>현재가</div>
-        <div>변동률</div>
-        <div>거래금액</div>
-        <div>rsi지수</div>
-      </div>
-
-      <div className="h-[80vh] w-full overflow-auto">
-        {markets.map((market) => {
-          const ticker = tickerList.find((t) => t.coinCode === market.coinCode);
-
-          return (
-            <MemoizedMarketList
-              key={market.coinCode}
-              onSelect={handleSelectMarket}
-              market={market}
-              ticker={
-                ticker || {
-                  price: "N/A",
-                  changeRate: 0,
-                  tradeVolume: "N/A",
-                }
-              } // ticker가 없을 경우 기본값을 제공
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
+// MarketList: memo로 감싸서 props가 변하지 않으면 리렌더링 방지
 const MarketList = memo(
   ({
     market,
@@ -77,7 +29,7 @@ const MarketList = memo(
             ? "text-[#FF3435]"
             : ticker.changeRate < 0
               ? "text-[#038DDC]"
-              : "text-[#9E9EA4]"
+              : "text-[#9e9ea4]"
         }`}
         onClick={() => onSelect(market.coinCode)}
       >
@@ -94,12 +46,13 @@ const MarketList = memo(
         </div>
 
         <div className="grid grid-cols-[2fr_1.5fr_3fr_1fr] gap-3">
-          <div className="text-right"> {ticker.price}</div>
-          <div className=" text-right"> {ticker.changeRate}%</div>
+          <div className="text-right">{ticker.price}</div>
+          <div className="text-right">{ticker.changeRate}%</div>
           <div className="text-right">
             {ticker.tradeVolume}
             <span className="text-[0.7rem] text-[#9E9EA4]">백만</span>
           </div>
+
           <div className="text-right">{market.rsi}</div>
         </div>
       </div>
@@ -108,5 +61,57 @@ const MarketList = memo(
 );
 
 const MemoizedMarketList = memo(MarketList);
+
+const CoinListUi = () => {
+  const { tickerList } = useCoinTicker();
+  const { markets, setSortList } = useCoinList();
+  const { handleSelectMarket } = useCoin();
+
+  const tickerMap = useMemo(() => {
+    console.log("맵 그리기");
+    return new Map(tickerList.map((t) => [t.coinCode, t]));
+  }, [tickerList]);
+
+  return (
+    <div className="h-screen w-[30rem] flex flex-col items-center justify-center bg-white text-[0.9rem] px-2">
+      <div className="text-black">
+        정렬:
+        <select
+          className="text-black"
+          onChange={(e) => setSortList(e.target.value)}
+        >
+          <option value="">기본</option>
+          <option value="like">좋아요</option>
+          <option value="rsi">rsi</option>
+        </select>
+      </div>
+      <div className="w-full text-black grid grid-cols-[0.8fr_2.5fr_1fr_1fr_1fr] gap-2 place-items-end px-5 pb-1">
+        <div>코인</div>
+        <div>현재가</div>
+        <div>변동률</div>
+        <div>거래금액</div>
+        <div>rsi지수</div>
+      </div>
+      <div className="h-[80vh] w-full overflow-auto">
+        {markets.map((market: Market) => {
+          const ticker = tickerMap.get(market.coinCode) || {
+            price: "N/A",
+            changeRate: 0,
+            tradeVolume: "N/A",
+          };
+
+          return (
+            <MemoizedMarketList
+              key={market.coinCode}
+              onSelect={handleSelectMarket}
+              market={market}
+              ticker={ticker}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 export default memo(CoinListUi);
