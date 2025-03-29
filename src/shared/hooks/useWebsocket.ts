@@ -1,6 +1,7 @@
 //trade, orderbook 웹소캣용 커스텀 훅
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import useCoin from "./useCoin";
 
 const Socket_URL = "wss://pubwss.bithumb.com/pub/ws";
 
@@ -29,6 +30,10 @@ export default function useWebsocket() {
   const [tradeData, setTradeData] = useState<TradeData[]>([]);
   const [orderbookData, setOrderbookData] = useState<OrderbookData>();
 
+  const { coin: selectedMarket } = useCoin();
+  
+  const prevCoinRef = useRef<string | null>(null);
+
   const sendMessage = useCallback(
     (message: object) => {
       if (wsRef.current && isConnected) {
@@ -48,6 +53,7 @@ export default function useWebsocket() {
       setIsConnected(true);
       console.log("연결상태", isConnected);
     };
+
     // 들어오는 웹소캣 데이터들은 실시간으로 버퍼에 저장
     wsRef.current.onmessage = (event) => {
       const message = JSON.parse(event.data);
@@ -92,6 +98,31 @@ export default function useWebsocket() {
       clearInterval(interval);
     }; // 클린업 함수 - 언마운트시 실행
   }, []); //마운트시 실행
+
+  useEffect(() => {
+    // 코인이 변경되면 웹소캣 연결 초기화
+    if (prevCoinRef.current !== selectedMarket) {
+      prevCoinRef.current = selectedMarket;
+      
+      // 웹소캣 연결 초기화
+      tradeBuffer.current = [];
+      orderbookBuffer.current = null;
+      setTradeData([]);
+      setOrderbookData(undefined);
+
+      if (isConnected && selectedMarket) {
+        sendMessage({
+          type: "orderbooksnapshot",
+          symbol: [`${selectedMarket}_KRW`]
+        });
+
+        sendMessage({
+          type: "transaction",
+          symbol: [`${selectedMarket}_KRW`]
+        });
+      }
+    }
+  }, [selectedMarket, isConnected, sendMessage]);
 
   return {
     isConnected,

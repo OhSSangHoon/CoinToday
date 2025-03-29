@@ -1,15 +1,14 @@
 import axios from "axios";
 
-export const orderBookApi = async () => {
+export const orderBookApi = async (coinCode = "BTC") => {
   try {
     const response = await axios.get(
-      "https://api.bithumb.com/public/orderbook/BTC_KRW"
+      `https://api.bithumb.com/public/orderbook/${coinCode}_KRW`
     );
-
-    console.log("호가 성공", response.data.data);
+    console.log(`${coinCode} 호가 성공`, response.data.data);
     return response.data.data;
   } catch (error) {
-    console.log("호가 에러:", error);
-    return [];
+    console.log(`${coinCode} 호가 에러:`, error);
+    return null;
   }
 };
