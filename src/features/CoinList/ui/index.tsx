@@ -1,5 +1,5 @@
 import { useCoin } from "../../../shared";
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useCoinList } from "../model";
 import useCoinTicker from "../model/useCoinTicker";
 
@@ -22,16 +22,53 @@ const MarketList = memo(
     ticker: { price: string; changeRate: number; tradeVolume: string };
     onSelect: (code: string) => void;
   }) => {
+    // 1. 이전 가격을 저장할 ref
+    const prevPriceRef = useRef<string>(ticker.price);
+
+    // 2. 깜박임 효과(배경색)를 위한 상태
+    const [flashColor, setFlashColor] = useState<"red" | "blue" | null>(null);
+
+    // 3. 가격 변동 감지
+    useEffect(() => {
+      const prevPrice = parseFloat(prevPriceRef.current);
+      const currentPrice = parseFloat(ticker.price);
+
+      // 가격이 달라졌을 때만 비교
+      if (!isNaN(prevPrice) && prevPrice !== currentPrice) {
+        if (currentPrice > prevPrice) {
+          setFlashColor("red");
+        } else if (currentPrice < prevPrice) {
+          setFlashColor("blue");
+        }
+
+        const timer = setTimeout(() => {
+          setFlashColor(null);
+        }, 500); // 0.5초 후 깜박임 해제
+
+        // cleanup
+        return () => clearTimeout(timer);
+      }
+
+      prevPriceRef.current = ticker.price;
+    }, [ticker.price]);
+
     return (
       <div
-        className={`rounded-md grid grid-cols-[1.3fr_2fr] px-2 cursor-pointer pb-3 hover:bg-blue-100 active:bg-orange-100 ${
-          ticker.changeRate > 0
-            ? "text-[#FF3435]"
-            : ticker.changeRate < 0
-              ? "text-[#038DDC]"
-              : "text-[#9e9ea4]"
-        }`}
-        onClick={() => onSelect(market.coinCode)}
+        onClick={() => {
+          onSelect(market.coinCode);
+        }}
+        className={`rounded-md grid grid-cols-[1.3fr_2fr] px-2 cursor-pointer pb-3 
+        hover:bg-gray-100 active:bg-orange-100  outline: 2px solid orange;
+        ${ticker.changeRate > 0 ? "text-[#FF3435]" : "text-[#038DDC]"}
+        ${
+          flashColor === "red"
+            ? "bg-red-100"
+            : flashColor === "blue"
+              ? "bg-blue-100"
+              : ""
+        }
+       
+      `}
       >
         <div className="flex flex-row justify-start items-center gap-4">
           <div className="text-[#9E9EA4] hover:text-yellow-500">
@@ -65,30 +102,32 @@ const MemoizedMarketList = memo(MarketList);
 const CoinListUi = () => {
   const { tickerList } = useCoinTicker();
   const { markets, setSortList } = useCoinList();
-  const { handleSelectMarket } = useCoin();
+  const { handleSelectMarket, coin: selectedCoin } = useCoin();
 
   const tickerMap = useMemo(() => {
-    console.log("맵 그리기");
     return new Map(tickerList.map((t) => [t.coinCode, t]));
   }, [tickerList]);
 
   return (
     <div className="h-screen w-[30rem] flex flex-col items-center justify-center bg-white text-[0.9rem] px-2">
-      <div className="text-black">
-        정렬:
-        <select
-          className="text-black"
-          onChange={(e) => setSortList(e.target.value)}
-        >
-          <option value="">기본</option>
-          <option value="like">좋아요</option>
-          <option value="rsi">rsi</option>
-        </select>
+      <div className="flex flex-row gap-10 pb-4">
+        <div className="text-black">
+          정렬:
+          <select
+            className="text-black"
+            onChange={(e) => setSortList(e.target.value)}
+          >
+            <option value="">기본</option>
+            <option value="like">좋아요</option>
+            <option value="rsi">rsi</option>
+          </select>
+        </div>
+        <div className="text-black">선택한 코인:{selectedCoin}</div>
       </div>
-      <div className="w-full text-black grid grid-cols-[0.8fr_2.5fr_1fr_1fr_1fr] gap-2 place-items-end px-5 pb-1">
+      <div className="w-full text-black text-[0.6rem] grid grid-cols-[1fr_2.5fr_1fr_1fr_1fr] gap-2 place-items-end px-5 pb-1">
         <div>코인</div>
         <div>현재가</div>
-        <div>변동률</div>
+        <div>변동률(24H)</div>
         <div>거래금액</div>
         <div>rsi지수</div>
       </div>

@@ -17,8 +17,8 @@ export default function useCoinTicker() {
   const { data: tickerData, isLoading } = useQuery({
     queryKey: ["tickerData"],
     queryFn: fetchTickerData,
-    refetchInterval: 6000,
-    staleTime: 5000, // 10초 동안 캐시된 데이터 사용
+    refetchInterval: 3000,
+    staleTime: 3000, // 3초 동안 캐시된 데이터 사용
     gcTime: 300000, // 5분동안 캐시 유지
     enabled: markets.length > 0,
   });
@@ -30,7 +30,7 @@ export default function useCoinTicker() {
       return [];
     }
     const tickerDataByCode = tickerData.data;
-    console.log("ticker 재정렬");
+    console.log("hook-ticker재정렬 UI-맵 재생성");
     return markets
       .map(({ coinCode }) => {
         const ticker = tickerDataByCode[coinCode];
