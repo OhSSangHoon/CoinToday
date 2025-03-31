@@ -1,6 +1,6 @@
-
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useOrderSetting } from "../model/BuyModel";
+import { useRSIModel } from "../model/RSIModel";
 
 export default function BuySection() {
   const {
@@ -22,15 +22,32 @@ export default function BuySection() {
     resetOrderStatus,
   } = useOrderSetting();
 
+  // RSI 모델 훅 사용
+  const {
+    rsiParams,
+    orderStatus: rsiOrderStatus,
+    setRSIValue,
+    submitRSITrade,
+    resetOrderStatus: resetRSIOrderStatus
+  } = useRSIModel();
+
+  // 주문 타입 (일반, RSI)
+  const [orderType, setOrderType] = useState<"일반" | "RSI">("일반");
+
+  // 현재 주문 상태 (일반 주문 또는 RSI 주문 상태 중 선택)
+  const currentOrderStatus = orderType === "일반" ? orderStatus : rsiOrderStatus;
+
   useEffect(() => {
     console.log("현재 상태:", {
       수량: quantity,
       총액: totalAmount,
       가격: price,
       코인: selectedMarket,
-      주문유형: selectedPriceType
+      주문유형: selectedPriceType,
+      TA주문타입: orderType,
+      RSI설정: rsiParams
     });
-  }, [quantity, totalAmount, price, selectedMarket, selectedPriceType]);
+  }, [quantity, totalAmount, price, selectedMarket, selectedPriceType, orderType, rsiParams]);
   
   // 주문 상태 메시지가 표시된 후 일정 시간 후에 리셋
   useEffect(() => {
@@ -42,11 +59,30 @@ export default function BuySection() {
     }
   }, [orderStatus?.isSuccess, orderStatus?.error, resetOrderStatus]);
 
+  // RSI 주문 상태 메시지 리셋
+  useEffect(() => {
+    if (rsiOrderStatus?.isSuccess || rsiOrderStatus?.error) {
+      const timer = setTimeout(() => {
+        resetRSIOrderStatus();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [rsiOrderStatus?.isSuccess, rsiOrderStatus?.error, resetRSIOrderStatus]);
+
   // 매수 버튼 클릭 핸들러
   const handleBuyClick = () => {
-    
     // (실제로는 로그인 상태에서 가져와야 함)
     const userId = "root";
+
+    // RSI 주문
+    if (orderType === "RSI") {
+      if (!selectedMarket || !totalAmount || totalAmount === "0") {
+        alert("코인과 매수 금액을 확인해주세요");
+        return;
+      }
+      submitRSITrade(userId, selectedMarket, totalAmount);
+      return;
+    }
 
     // 시장가 매수
     if (selectedPriceType === "시장가") {
@@ -65,7 +101,6 @@ export default function BuySection() {
   return (
     <div className="w-full h-[85%] pt-4">
       <div className="flex flex-row justify-between items-center">
-
         <h1 className="text-white text-[1rem] font-bold">주문하기</h1>
         <div className="flex flex-row justify-between items-center bg-[#34343F] rounded-md p-2 gap-2">
           <button 
@@ -95,25 +130,31 @@ export default function BuySection() {
           ) : (
             <input 
               type="text" 
-              className={`w-[15.6rem] h-[2.3rem] rounded-md text-[#c3c3c6] text-[1rem] bg-[#17171c] border-none outline-none p-2 ${selectedPriceType === "시장가" ? "opacity-50" : ""}`}
+              className={`w-[15.6rem] h-[2.3rem] rounded-md text-[#c3c3c6] text-[1rem] bg-[#17171c] border-none outline-none p-2 ${(selectedPriceType === "시장가" || orderType === "RSI") ? "opacity-50" : ""}`}
               placeholder={selectedPriceType === "시장가" ? "시장가 주문" : "가격 입력"}
-              value={selectedPriceType === "시장가" ? "시장가" : price}
+              value={
+                orderType === "RSI" 
+                  ? "RSI 자동 주문" 
+                  : selectedPriceType === "시장가" 
+                    ? "시장가" 
+                    : price
+              }
               onChange={(e) => setPrice(e.target.value)}
-              disabled={selectedPriceType === "시장가"}
+              disabled={selectedPriceType === "시장가" || orderType === "RSI"}
             />
           )}
         </div>
       </div>
+      
       {/* 수량 입력 섹션 - 시장가일 때는 비활성화 */}
       <div className="flex flex-row justify-between items-center mt-4">
         <h1 className="text-white text-[1rem] font-bold">수량</h1>
         <div className="flex flex-row justify-between items-center rounded-md">
           <input 
             type="text" 
-            className={"w-[11rem] h-[2.3rem] rounded-l-md text-[#c3c3c6] text-[1rem] bg-[#17171c] border-none outline-none p-2"}
+            className={`w-[11rem] h-[2.3rem] rounded-l-md text-[#c3c3c6] text-[1rem] bg-[#17171c] border-none outline-none p-2 ${(selectedPriceType === "시장가" || orderType === "RSI") ? "opacity-50" : ""}`}
             placeholder={`${selectedMarket || ''} 수량`}
             value={quantity}
-
             onChange={(e) => {
               // 수량 입력 시 정확한 값 처리
               const inputValue = e.target.value;
@@ -128,17 +169,19 @@ export default function BuySection() {
                 setQuantity(inputValue);
               }
             }}
-
+            disabled={selectedPriceType === "시장가" || orderType === "RSI"}
           />
           <button 
-            className={"w-[2.3rem] h-[2.3rem] text-[#c3c3c6] text-[1.5rem] bg-[#17171c] border-none outline-none"}
+            className={`w-[2.3rem] h-[2.3rem] text-[#c3c3c6] text-[1.5rem] bg-[#17171c] border-none outline-none ${(selectedPriceType === "시장가" || orderType === "RSI") ? "opacity-50" : ""}`}
             onClick={decreaseQuantity}
+            disabled={selectedPriceType === "시장가" || orderType === "RSI"}
           >
             -
           </button>
           <button 
-            className={"w-[2.3rem] h-[2.3rem] text-[#c3c3c6] font-semibold text-[1rem] bg-[#17171c] border-none outline-none rounded-r-md"}
+            className={`w-[2.3rem] h-[2.3rem] text-[#c3c3c6] font-semibold text-[1rem] bg-[#17171c] border-none outline-none rounded-r-md ${(selectedPriceType === "시장가" || orderType === "RSI") ? "opacity-50" : ""}`}
             onClick={increaseQuantity}
+            disabled={selectedPriceType === "시장가" || orderType === "RSI"}
           >
             +
           </button>
@@ -162,30 +205,80 @@ export default function BuySection() {
           <span className="absolute right-3 text-[#c3c3c6]">KRW</span>
         </div>
       </div>
+      
+      {/* TA 주문 섹션 */}
+      <div className="flex flex-row justify-between items-center mt-4">
+        <h1 className="text-white text-[1rem] font-bold">TA 주문</h1>
+        <div className="flex flex-row items-center gap-2">
+          <select 
+            className="w-[7.8rem] h-[2.3rem] rounded-md text-[#c3c3c6] text-[1rem] bg-[#17171c] border-none outline-none p-2"
+            onChange={(e) => setOrderType(e.target.value === "RSI" ? "RSI" : "일반")}
+            value={orderType}
+          >
+            <option value="일반">사용 안함</option>
+            <option value="RSI">RSI 주문</option>
+          </select>
+          
+          {orderType === "RSI" && (
+            <input 
+              type="text" 
+              className="w-[7.8rem] h-[2.3rem] rounded-md text-[#c3c3c6] text-[1rem] bg-[#17171c] border-none outline-none p-2"
+              placeholder="RSI 값 입력"
+              value={rsiParams.rsi}
+              onChange={(e) => setRSIValue(e.target.value)}
+            />
+          )}
+        </div>
+      </div>
+      
+      {/* RSI 설명 텍스트 영역 - 고정 높이로 설정 */}
+      <div className="h-10 mt-2">
+        {orderType === "RSI" && (
+          <div className="text-[0.8rem] text-[#8a8a8d]">
+            <p>
+              RSI가 {rsiParams.rsi}% 이하일 때 매수합니다.
+              (시간 간격: {rsiParams.intervals})
+            </p>
+          </div>
+        )}
+      </div>
+      
       {/* 구매 버튼 */}
       <div className="mt-6">
         <button 
           className="w-full h-[3rem] bg-red-600 hover:bg-red-700 text-white font-bold rounded-md transition-all duration-200"
           disabled={
             !selectedMarket || 
-            orderStatus?.isSubmitting || 
-            (selectedPriceType === "시장가" ? (!totalAmount || totalAmount === "0") : (!price || !quantity))
+            currentOrderStatus?.isSubmitting || 
+            (orderType === "RSI" 
+              ? (!totalAmount || totalAmount === "0") 
+              : (selectedPriceType === "시장가" 
+                ? (!totalAmount || totalAmount === "0") 
+                : (!price || !quantity))
+            )
           }
           onClick={handleBuyClick}
         >
-          {orderStatus?.isSubmitting ? "주문 처리 중..." : `${selectedPriceType} 매수하기`}
+          {currentOrderStatus?.isSubmitting 
+            ? "주문 처리 중..." 
+            : "매수하기"
+          }
         </button>
       </div>
+      
       {/* 주문 상태 메시지 */}
-      {orderStatus?.isSuccess && (
+      {currentOrderStatus?.isSuccess && (
         <div className="fixed top-[5rem] left-1/2 transform -translate-x-1/2 -translate-y-1/2 p-2 bg-green-500 bg-opacity-20 text-green-400 rounded-md text-center">
-          매수 주문이 성공적으로 처리되었습니다.
+          {orderType === "RSI" 
+            ? `RSI ${rsiParams.rsi}% 매수 주문이 성공적으로 설정되었습니다.` 
+            : "매수 주문이 성공적으로 처리되었습니다."
+          }
         </div>
       )}
       
-      {orderStatus?.error && (
+      {currentOrderStatus?.error && (
         <div className="fixed top-[5rem] left-1/2 transform -translate-x-1/2 -translate-y-1/2 p-2 bg-red-500 bg-opacity-20 text-red-400 rounded-md text-center">
-          오류: {orderStatus.error}
+          오류: {currentOrderStatus.error}
         </div>
       )}
     </div>
