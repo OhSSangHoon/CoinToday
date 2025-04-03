@@ -1,4 +1,5 @@
 // ui/JoinUi.tsx
+import { Link } from "react-router-dom";
 import useSignup from "../model/index";
 
 export default function JoinUi() {
@@ -11,12 +12,15 @@ export default function JoinUi() {
     verifyEmailCode,
     isLoading,
     successMessage,
+    watch,
   } = useSignup();
 
   // 폼 제출 처리
   const onSubmit = (data: any) => {
     signUp(data);
   };
+  const email = watch("email");
+  const authCode = watch("authCode");
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
@@ -64,7 +68,7 @@ export default function JoinUi() {
         {/* 이메일 인증 버튼 */}
         <button
           className="w-full p-2 mb-2 border border-black rounded hover:bg-blue-600"
-          onClick={() => requestEmailCode("email")}
+          onClick={() => requestEmailCode(email)}
           disabled={isLoading}
         >
           이메일 인증
@@ -86,7 +90,7 @@ export default function JoinUi() {
         {/* 인증하기 버튼 */}
         <button
           className="w-full p-2 mb-2 rounded border border-black hover:bg-green-600"
-          onClick={() => verifyEmailCode("email", "authCode")}
+          onClick={() => verifyEmailCode(email, authCode)}
         >
           인증하기
         </button>
@@ -150,6 +154,15 @@ export default function JoinUi() {
         >
           {isLoading ? "가입 중..." : "회원가입"}
         </button>
+        <div className="flex flex-row justify-center gap-1 transform transition duration-200">
+          <Link to="/" className=" hover:scale-105">
+            홈페이지
+          </Link>
+          |
+          <Link to="/login" className="hover:scale-105">
+            로그인
+          </Link>
+        </div>
       </div>
     </div>
   );

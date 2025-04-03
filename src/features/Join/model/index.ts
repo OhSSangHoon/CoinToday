@@ -42,6 +42,7 @@ const useSignup = () => {
     formState: { errors },
     setValue,
     setError,
+    watch,
   } = useForm({
     resolver: yupResolver(signupSchema), // useForm 유효성 검사에 yup 스키마 사용
     mode: "onChange", // 실시간 검사 모드
@@ -70,13 +71,14 @@ const useSignup = () => {
 
   // 이메일 인증 코드 검증 함수
   const verifyEmailCode = async (email: string, authCode: string) => {
+    console.log(email, authCode);
     try {
       const response = await verifyEmailCodeApi(email, authCode);
-      console.log(response);
       setSuccessMessage((prev) => ({
         ...prev,
         authCode: "인증에 성공하였습니다. ",
       }));
+      return response;
     } catch (error) {
       console.log(error);
       setError("email", {
@@ -92,7 +94,7 @@ const useSignup = () => {
       setIsLoading(true);
       const responseData = await signUpApi(data);
       console.log(responseData);
-      setIsLoading(false);
+      
     } catch (error) {
       setIsLoading(false);
       setError("userId", {
@@ -112,6 +114,7 @@ const useSignup = () => {
     setValue,
     isLoading,
     successMessage,
+    watch,
   };
 };
 
