@@ -78,5 +78,5 @@ export default function useCoinList() {
       prevSortList.current = sortList;
     }
   }, [sortList]);
-  return { markets, setSortList ,sortList};
+  return { markets, setSortList, sortList };
 }

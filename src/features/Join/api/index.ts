@@ -15,13 +15,6 @@ export const signUpApi = async (data: {
   return response.data;
 };
 
-// // 이메일 인증 코드 발급
-// export const requestEmailCodeApi = async (email: string) => {
-//   await axios.post("http://116.126.197.110:30010/email-get-code", {
-//     email: "kmk9970@naver.com",
-//   });
-// };
-
 export const requestEmailCodeApi = async (email: string) => {
   try {
     const response = await axios.post(

@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import axios from "axios";
 import { requestEmailCodeApi, signUpApi, verifyEmailCodeApi } from "../api";
 
 // 유효성 검사 스키마
@@ -94,7 +93,6 @@ const useSignup = () => {
       setIsLoading(true);
       const responseData = await signUpApi(data);
       console.log(responseData);
-      
     } catch (error) {
       setIsLoading(false);
       setError("userId", {
