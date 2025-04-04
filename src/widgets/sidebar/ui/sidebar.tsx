@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CoinList, Mypage } from "../../../features";
 import { Link } from "react-router-dom";
+import { LogoutModal } from "../../../features/auth/ui";
 
 export default function SideBar() {
   const [sidebar, setSidebar] = useState<{
@@ -56,6 +57,12 @@ export default function SideBar() {
       >
         코인 리스트
       </div>
+      {sessionStorage.getItem("userId") && (
+        <div onClick={() => toggleSidebar("logout", <LogoutModal />)}>
+          로그아웃
+        </div>
+      )}
+
       {sidebar.isOpen && (
         <div className=" absolute top-0 left-[60px]  h-screen w-screen flex flex-row justify-start items-center">
           <div className="w-100 h-screen bg-[#101013] z-[1000]">
