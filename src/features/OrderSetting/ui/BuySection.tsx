@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
 import { useOrderSetting } from "../model/BuyModel";
 import { useRSIModel } from "../model/RSIModel";
+import { getUserFinancialInfo } from "../../Mypage/api";
+import { UserFinancial } from "../../Mypage/model";
+import { useUserId } from "../../Mypage/model/userId";
 
 export default function BuySection() {
+  const { userId } = useUserId();
+  
   const {
     selectedMarket,
     selectedPriceType,
@@ -31,11 +36,37 @@ export default function BuySection() {
     resetOrderStatus: resetRSIOrderStatus
   } = useRSIModel();
 
+  // 사용자 금융 정보 상태
+  const [financialInfo, setFinancialInfo] = useState<UserFinancial>({
+    userAssets: [],
+    cash: 0
+  });
+  const [isFinancialLoading, setIsFinancialLoading] = useState(true);
+
   // 주문 타입 (일반, RSI)
   const [orderType, setOrderType] = useState<"일반" | "RSI">("일반");
 
   // 현재 주문 상태 (일반 주문 또는 RSI 주문 상태 중 선택)
   const currentOrderStatus = orderType === "일반" ? orderStatus : rsiOrderStatus;
+
+  // 사용자 금융 정보 로드
+  useEffect(() => {
+    if (!userId) return;
+    
+    const fetchFinancialInfo = async () => {
+      try {
+        setIsFinancialLoading(true);
+        const data = await getUserFinancialInfo(userId);
+        setFinancialInfo(data);
+      } catch (error) {
+        console.error("금융 정보 로드 오류:", error);
+      } finally {
+        setIsFinancialLoading(false);
+      }
+    };
+    
+    fetchFinancialInfo();
+  }, [userId]);
 
   useEffect(() => {
     console.log("현재 상태:", {
@@ -71,8 +102,10 @@ export default function BuySection() {
 
   // 매수 버튼 클릭 핸들러
   const handleBuyClick = () => {
-    // (실제로는 로그인 상태에서 가져와야 함)
-    const userId = "root";
+    if (!userId) {
+      alert("로그인이 필요합니다");
+      return;
+    }
 
     // RSI 주문
     if (orderType === "RSI") {
@@ -97,6 +130,9 @@ export default function BuySection() {
       submitLimitBuy(userId);
     }
   };
+  
+  // 주문가능금액 포맷팅
+  const formattedAvailableBalance = new Intl.NumberFormat('ko-KR').format(Math.floor(financialInfo.cash));
   
   return (
     <div className="w-full h-[85%] pt-4">
@@ -231,7 +267,7 @@ export default function BuySection() {
         </div>
       </div>
       
-      {/* RSI 설명 텍스트 영역 - 고정 높이로 설정 */}
+      {/* RSI 설명 텍스트 영역 */}
       <div className="h-10 mt-2">
         {orderType === "RSI" && (
           <div className="text-[0.8rem] text-[#8a8a8d]">
@@ -243,11 +279,22 @@ export default function BuySection() {
         )}
       </div>
       
+      {/* 주문가능금액 표시 */}
+      <div className="flex justify-between items-center mt-4 mb-10 border-t border-[#34343F] pt-4">
+        <span className="text-[1rem] text-[#8a8a8d]">주문가능금액</span>
+        {isFinancialLoading ? (
+          <div className="w-5 h-5 border-t-2 border-blue-500 rounded-full animate-spin"></div>
+        ) : (
+          <span className="text-[1rem] text-[#c3c3c6] font-medium">{formattedAvailableBalance} 원</span>
+        )}
+      </div>
+      
       {/* 구매 버튼 */}
-      <div className="mt-6">
+      <div className="mt-3">
         <button 
           className="w-full h-[3rem] bg-red-600 hover:bg-red-700 text-white font-bold rounded-md transition-all duration-200"
           disabled={
+            !userId ||
             !selectedMarket || 
             currentOrderStatus?.isSubmitting || 
             (orderType === "RSI" 

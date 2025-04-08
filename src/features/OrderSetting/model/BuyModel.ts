@@ -27,7 +27,7 @@ export function useOrderSetting() {
   
   // 선택된 코인 정보 가져오기
   const { coin: selectedMarket } = useCoin();
-  const { orderbookData, tradeData, isConnected } = useWebsocket();
+  const { orderbookData, tradeData } = useWebsocket();
   
   // 현재가 정보
   const currentPriceInfo = useMemo(() => {
