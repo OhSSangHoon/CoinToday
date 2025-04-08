@@ -64,12 +64,12 @@ export default function SideBar() {
       )}
 
       {sidebar.isOpen && (
-        <div className=" absolute top-0 left-[60px]  h-screen w-screen flex flex-row justify-start items-center">
+        <div className="absolute -top-[1px] left-[60px] h-screen w-screen flex flex-row justify-start items-center">
           <div className="w-100 h-screen bg-[#101013] z-[1000]">
             {sidebar.content}
           </div>
           <div
-            className="h-full w-full "
+            className="h-full w-full"
             onClick={() =>
               setSidebar({ isOpen: false, content: null, type: null })
             }
