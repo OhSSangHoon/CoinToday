@@ -34,6 +34,12 @@ export interface TradeRecordResponse {
   records: TradeRecord[]; // 거래 내역 목록
 }
 
+export interface OpenOrder {
+  orderId: string;
+  coinName: string;
+  type: 'buy' | 'sell';
+}
+
 export const calculateAssetDistribution = (userFinancial: UserFinancial): {
   name: string;
   value: number;

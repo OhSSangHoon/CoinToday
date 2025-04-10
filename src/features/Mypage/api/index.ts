@@ -1,6 +1,4 @@
-import { TradeRecord, TradeRecordResponse, CoinDataItem, UserAsset, UserFinancial } from '../model/index.ts';
-
-
+import { TradeRecord, CoinDataItem, UserAsset, UserFinancial, OpenOrder } from '../model/index.ts';
 
 // 사용자 자산 정보 조회
 export const getUserFinancialInfo = async (userId: string): Promise<UserFinancial> => {
@@ -78,6 +76,43 @@ export const getUserTradeRecords = async (userId: string): Promise<TradeRecord[]
   } catch (error) {
     console.error('거래 내역 조회 실패:', error);
     // 오류 발생 시 빈 배열 반환
+    return [];
+  }
+};
+
+
+export const getUserOpenOrders = async (userId: string): Promise<OpenOrder[]> => {
+  try{
+    const url = `http://116.126.197.110:30010/open-orders?userId=${userId}`;
+    console.log('API 요청 URL:', url);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`API 요청 실패: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('API 응답 데이터:', data);
+
+    if (!Array.isArray(data)) {
+      throw new Error('유효하지 않은 응답 데이터');
+    }
+
+    const openOrders: OpenOrder[] = data.map((order: any) => ({
+      orderId: order.orderId,
+      coinName: order.coinName,
+      type: order.type,
+    }));
+
+    return openOrders;
+  } catch (error) {
+    console.error('주문 내역 조회 실패:', error);
     return [];
   }
 };

@@ -40,7 +40,7 @@ export default function AssetListSection({ assets, colorMapping }: AssetListSect
   return (
     <div 
       ref={assetsContainerRef}
-      className="bg-[#101010] rounded-lg max-h-[500px] overflow-y-auto scrollbar-hide p-3"
+      className="bg-[#101010] rounded-lg max-h-[380px] overflow-y-auto scrollbar-hide p-3"
     >
       <div className="space-y-3">
         {assets.length > 0 ? (

@@ -3251,6 +3251,11 @@ tailwindcss@4.0.14:
   resolved "https://registry.yarnpkg.com/tailwindcss/-/tailwindcss-4.0.14.tgz#531548524eb422fb8b89a24ebdf267c6726a09c6"
   integrity sha512-92YT2dpt671tFiHH/e1ok9D987N9fHD5VWoly1CdPD/Cd1HMglvZwP3nx2yTj2lbXDAHt8QssZkxTLCCTNL+xw==
 
+tanstack@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/tanstack/-/tanstack-1.0.0.tgz#7eeb4d2d196696e8e10fc0e346d440140fd2161e"
+  integrity sha512-BUpDmwGlWHk2F183Uu1+k85biSLrpSh/zA9ephJwmZ9ze+XDEw3JOyN9vhcbFqrQFrf5yuWImt+0Kn4fUNgzTg==
+
 tapable@^2.2.0:
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/tapable/-/tapable-2.2.1.tgz#1967a73ef4060a82f12ab96af86d52fdb76eeca0"
