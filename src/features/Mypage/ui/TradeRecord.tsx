@@ -1,6 +1,12 @@
-import { useEffect, useState, useRef, RefObject } from 'react';
+import { useEffect, useState, useRef, RefObject, useCallback } from 'react';
 import { TradeRecord, OpenOrder } from '../model/index';
-import { getUserTradeRecords, getUserOpenOrders } from '../api/index';
+import { 
+  getUserTradeRecords, 
+  getUserOpenOrders, 
+  cancelAutoTradeOrder, 
+  cancelLimitOrder,
+  getUserFinancialInfo
+} from '../api/index';
 import { useInfiniteScroll } from '../../../shared/hooks/useInfiniteScroll';
 
 interface TradeRecordSectionProps {
@@ -17,46 +23,60 @@ export default function TradeRecordSection({ userId }: TradeRecordSectionProps) 
   const [activeTab, setActiveTab] = useState<'buy' | 'sell' | 'open'>('buy'); // 현재 활성 탭
   const scrollContainerRef = useRef<HTMLDivElement>(null); // 스크롤 컨테이너 참조 추가
 
-  // 거래 내역 로드
-  useEffect(() => {
+  // 금융 정보 갱신 함수
+  const updateFinancialInfo = useCallback(async () => {
     if (!userId) return;
     
-    const fetchTradeRecords = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // 거래 내역 가져오기
-        const records = await getUserTradeRecords(userId);
-        
-        // 최신순 정렬 (거래 시간 기준)
-        const sortedRecords = [...records].sort((a, b) => {
-          const dateA = new Date(a.tradeTime).getTime();
-          const dateB = new Date(b.tradeTime).getTime();
-          return dateB - dateA;
-        });
-        
-        setTradeRecords(sortedRecords);
-        
-        // 매수/매도 기록 분리
-        const buys = sortedRecords.filter(record => record.state === 'buy');
-        const sells = sortedRecords.filter(record => record.state === 'sell');
-        setBuyRecords(buys);
-        setSellRecords(sells);
-        
-        // 미체결 주문 가져오기
-        const orders = await getUserOpenOrders(userId);
-        setOpenOrders(orders);
-      } catch (error: any) {
-        console.error('거래 내역 로드 오류:', error);
-        setError(`거래 내역을 불러올 수 없습니다: ${error.message || '알 수 없는 오류'}`);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchTradeRecords();
+    try {
+      // 서버에서 최신 금융 정보 가져오기
+      await getUserFinancialInfo(userId);
+      console.log('금융 정보 갱신 완료');
+    } catch (error) {
+      console.error('금융 정보 갱신 실패:', error);
+    }
   }, [userId]);
+
+  // 거래 내역 로드 함수 (재사용을 위해 분리)
+  const fetchTradeRecords = useCallback(async () => {
+    if (!userId) return;
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // 거래 내역 가져오기
+      const records = await getUserTradeRecords(userId);
+      
+      // 최신순 정렬 (거래 시간 기준)
+      const sortedRecords = [...records].sort((a, b) => {
+        const dateA = new Date(a.tradeTime).getTime();
+        const dateB = new Date(b.tradeTime).getTime();
+        return dateB - dateA;
+      });
+      
+      setTradeRecords(sortedRecords);
+      
+      // 매수/매도 기록 분리
+      const buys = sortedRecords.filter(record => record.state === 'buy');
+      const sells = sortedRecords.filter(record => record.state === 'sell');
+      setBuyRecords(buys);
+      setSellRecords(sells);
+      
+      // 미체결 주문 가져오기
+      const orders = await getUserOpenOrders(userId);
+      setOpenOrders(orders);
+    } catch (error: any) {
+      console.error('거래 내역 로드 오류:', error);
+      setError(`거래 내역을 불러올 수 없습니다: ${error.message || '알 수 없는 오류'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId]);
+
+  // 초기 데이터 로드
+  useEffect(() => {
+    fetchTradeRecords();
+  }, [fetchTradeRecords]);
   
   // 무한 스크롤 훅 사용 - 매수 내역
   const buyScrollData = useInfiniteScroll({
@@ -163,6 +183,56 @@ export default function TradeRecordSection({ userId }: TradeRecordSectionProps) 
   
   // 미체결 주문 항목 렌더링 함수
   const renderOpenOrderItem = (order: OpenOrder, index: number) => {
+    // 주문 취소 핸들러
+    const handleCancelOrder = async () => {
+      if (!userId) return;
+      
+      // 취소 확인
+      if (!window.confirm(`${order.coinName} ${order.type === 'buy' ? '매수' : '매도'} 주문을 취소하시겠습니까?`)) {
+        return;
+      }
+      
+      setIsLoading(true);
+      try {
+        // RSI 자동 주문인지 여부 확인 (orderId에 'RSI'가 포함되어 있으면 자동 주문으로 가정)
+        if (order.orderId.includes('RSI') || order.orderId.includes('AUTO')) {
+          // 자동 매매 주문 취소
+          const success = await cancelAutoTradeOrder(userId);
+          if (success) {
+            alert('자동 매매 주문이 취소되었습니다.');
+            
+            // 주문 목록 다시 로드
+            await fetchTradeRecords();
+            
+            // 금융 정보 업데이트
+            await updateFinancialInfo();
+          } else {
+            alert('주문 취소에 실패했습니다.');
+          }
+        } else {
+          // 일반 지정가 주문 취소
+          const orderType = order.type === 'buy' ? 'bid' : 'ask';
+          const success = await cancelLimitOrder(userId, order.coinName, order.orderId, orderType);
+          if (success) {
+            alert('주문이 취소되었습니다.');
+            
+            // 주문 목록 다시 로드
+            await fetchTradeRecords();
+            
+            // 금융 정보 업데이트
+            await updateFinancialInfo();
+          } else {
+            alert('주문 취소에 실패했습니다.');
+          }
+        }
+      } catch (error) {
+        console.error('주문 취소 오류:', error);
+        alert('주문 취소 중 오류가 발생했습니다.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     return (
       <div 
         key={index} 
@@ -184,9 +254,18 @@ export default function TradeRecordSection({ userId }: TradeRecordSectionProps) 
           <span className="text-sm text-gray-400">주문 ID: {order.orderId.substring(0, 8)}...</span>
         </div>
         
-        <div className="mt-2 pt-2 border-t border-gray-700 flex justify-between items-center">
+        <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-700">
           <span className="text-sm text-gray-400">상태</span>
-          <span className="font-medium text-yellow-400">미체결</span>
+          <div className="flex items-center">
+            <span className="font-medium text-yellow-400 mr-3">미체결</span>
+            <button 
+              onClick={handleCancelOrder}
+              className="px-2 py-1 bg-red-900 hover:bg-red-800 text-red-100 text-xs rounded transition-colors"
+              disabled={isLoading}
+            >
+              취소
+            </button>
+          </div>
         </div>
       </div>
     );

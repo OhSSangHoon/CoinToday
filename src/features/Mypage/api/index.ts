@@ -64,6 +64,7 @@ export const getUserTradeRecords = async (userId: string): Promise<TradeRecord[]
     
     // 응답 데이터 형식화
     const tradeRecords: TradeRecord[] = data.map((record: any) => ({
+      orderId: record.orderId,
       coinName: record.coinName,
       state: record.state,
       amount: parseFloat(record.amount) || 0,
@@ -109,11 +110,84 @@ export const getUserOpenOrders = async (userId: string): Promise<OpenOrder[]> =>
       orderId: order.orderId,
       coinName: order.coinName,
       type: order.type,
+      amount: parseFloat(order.amount) || 0,
+      price: parseFloat(order.price) || 0,
+      totalAmount: parseFloat(order.totalAmount) || 0,
+      createdAt: order.createdAt,
     }));
 
     return openOrders;
   } catch (error) {
     console.error('주문 내역 조회 실패:', error);
     return [];
+  }
+};
+
+// 자동 매매 주문 취소
+export const cancelAutoTradeOrder = async (userId: string): Promise<boolean> => {
+  try {
+    const url = `http://116.126.197.110:30010/stop-auto-trade`;
+    console.log('자동 매매 주문 취소 요청:', url);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API 요청 실패: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('자동 매매 주문 취소 응답:', data);
+
+    return data.success === true;
+  } catch (error) {
+    console.error('자동 매매 주문 취소 실패:', error);
+    return false;
+  }
+};
+
+// 지정가 매수 주문 취소
+export const cancelLimitOrder = async (
+  userId: string,
+  coinName: string,
+  orderId: string,
+  type: 'bid' | 'ask'
+): Promise<boolean> => {
+  try {
+    const url = `http://116.126.197.110:30010/cancel-limit-order`;
+    console.log('지정가 주문 취소 요청:', url);
+    console.log('요청 데이터:', { userId, order_currency: coinName, order_id: orderId, type });
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId,
+        order_currency: coinName,
+        order_id: orderId,
+        type
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API 요청 실패: ${response.status}`, errorText);
+      throw new Error(`API 요청 실패: ${response.status}`);
+    }
+
+    const responseText = await response.text();
+    console.log('지정가 주문 취소 응답:', responseText);
+
+    return responseText.includes('success');
+  } catch (error) {
+    console.error('지정가 주문 취소 실패:', error);
+    return false;
   }
 };

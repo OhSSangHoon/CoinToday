@@ -35,12 +35,14 @@ export interface TradeRecordResponse {
   records: TradeRecord[]; // 거래 내역 목록
 }
 
+// 미체결 주문 인터페이스
 export interface OpenOrder {
   orderId: string;
   coinName: string;
   type: 'buy' | 'sell';
 }
 
+// 자산 분포 계산
 export const calculateAssetDistribution = (userFinancial: UserFinancial): {
   name: string;
   value: number;
