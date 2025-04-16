@@ -39,7 +39,8 @@ export default function BuySection() {
   // 사용자 금융 정보 상태
   const [financialInfo, setFinancialInfo] = useState<UserFinancial>({
     userAssets: [],
-    cash: 0
+    cash: 0,
+    availableCash: 0
   });
   const [isFinancialLoading, setIsFinancialLoading] = useState(true);
 
@@ -131,8 +132,8 @@ export default function BuySection() {
     }
   };
   
-  // 주문가능금액 포맷팅
-  const formattedAvailableBalance = new Intl.NumberFormat('ko-KR').format(Math.floor(financialInfo.cash));
+  // 주문가능금액
+  const formattedAvailableBalance = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 }).format(Math.floor(financialInfo.availableCash));
   
   return (
     <div className="w-full h-[85%] pt-4">
@@ -288,7 +289,6 @@ export default function BuySection() {
           <span className="text-[1rem] text-[#c3c3c6] font-medium">{formattedAvailableBalance} 원</span>
         )}
       </div>
-      
       {/* 구매 버튼 */}
       <div className="mt-3">
         <button 
