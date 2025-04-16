@@ -10,7 +10,7 @@ export default function MypageUi() {
   const { userId, nickName } = useUserId();
   
   // 상태 관리
-  const [financialInfo, setFinancialInfo] = useState<UserFinancial>({ userAssets: [], cash: 0 });
+  const [financialInfo, setFinancialInfo] = useState<UserFinancial>({ userAssets: [], cash: 0, availableCash: 0 });
   const [assetDistribution, setAssetDistribution] = useState<{ name: string; value: number; percentage: number }[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -161,7 +161,7 @@ export default function MypageUi() {
                 <div className="p-3 rounded-lg">
                   <p className="text-sm text-gray-300">주문가능금액</p>
                   <p className="text-md font-medium">
-                    {Math.floor(financialInfo.cash).toLocaleString()}원
+                    {Math.floor(financialInfo.availableCash).toLocaleString()}원
                   </p>
                 </div>
               </div>

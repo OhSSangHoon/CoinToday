@@ -17,6 +17,7 @@ export interface UserAsset {
 export interface UserFinancial {
   userAssets: UserAsset[];  // 사용자가 보유한 코인 목록
   cash: number; // 보유 현금
+  availableCash: number; // 주문 가능 현금
 }
 
 // 거래 내역 인터페이스

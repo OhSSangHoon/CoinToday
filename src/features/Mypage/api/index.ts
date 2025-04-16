@@ -19,6 +19,8 @@ export const getUserFinancialInfo = async (userId: string): Promise<UserFinancia
     
     // 현금 데이터 변환
     const cash = parseFloat(data[0].cash) || 0;
+    // 주문 가능 원화 추가
+    const availableCash = parseFloat(data[0].availableCash) || 0;
     
     // 코인 자산 데이터 변환
     const userAssets: UserAsset[] = data.map((item: CoinDataItem) => ({
@@ -27,14 +29,13 @@ export const getUserFinancialInfo = async (userId: string): Promise<UserFinancia
       tradePrice: parseFloat(item.tradePrice) || 0,
     }));
     
-    return { userAssets, cash };
+    return { userAssets, cash, availableCash };
     
   } catch (error) {
     console.error('자산 정보 조회 실패:', error);
-    return { userAssets: [], cash: 0 };
+    return { userAssets: [], cash: 0, availableCash: 0 };
   }
 };
-
 
 // 거래 내역 조회
 export const getUserTradeRecords = async (userId: string): Promise<TradeRecord[]> => {
@@ -80,7 +81,7 @@ export const getUserTradeRecords = async (userId: string): Promise<TradeRecord[]
   }
 };
 
-
+// 주문 내역 조회
 export const getUserOpenOrders = async (userId: string): Promise<OpenOrder[]> => {
   try{
     const url = `http://116.126.197.110:30010/open-orders?userId=${userId}`;
