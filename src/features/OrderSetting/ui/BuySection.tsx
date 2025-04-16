@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useOrderSetting } from "../model/BuyModel";
 import { useRSIModel } from "../model/RSIModel";
 import { getUserFinancialInfo } from "../../Mypage/api";
@@ -50,24 +50,25 @@ export default function BuySection() {
   // 현재 주문 상태 (일반 주문 또는 RSI 주문 상태 중 선택)
   const currentOrderStatus = orderType === "일반" ? orderStatus : rsiOrderStatus;
 
-  // 사용자 금융 정보 로드
-  useEffect(() => {
+  // 사용자 금융 정보 로드 함수 (재사용을 위해 useCallback으로 분리)
+  const fetchFinancialInfo = useCallback(async () => {
     if (!userId) return;
     
-    const fetchFinancialInfo = async () => {
-      try {
-        setIsFinancialLoading(true);
-        const data = await getUserFinancialInfo(userId);
-        setFinancialInfo(data);
-      } catch (error) {
-        console.error("금융 정보 로드 오류:", error);
-      } finally {
-        setIsFinancialLoading(false);
-      }
-    };
-    
-    fetchFinancialInfo();
+    try {
+      setIsFinancialLoading(true);
+      const data = await getUserFinancialInfo(userId);
+      setFinancialInfo(data);
+    } catch (error) {
+      console.error("금융 정보 로드 오류:", error);
+    } finally {
+      setIsFinancialLoading(false);
+    }
   }, [userId]);
+
+  // 초기 금융 정보 로드
+  useEffect(() => {
+    fetchFinancialInfo();
+  }, [fetchFinancialInfo]);
 
   useEffect(() => {
     console.log("현재 상태:", {
@@ -81,25 +82,47 @@ export default function BuySection() {
     });
   }, [quantity, totalAmount, price, selectedMarket, selectedPriceType, orderType, rsiParams]);
   
-  // 주문 상태 메시지가 표시된 후 일정 시간 후에 리셋
+  // 주문 상태 변경 감지 및 주문가능원화 업데이트
   useEffect(() => {
+    // 주문 성공 시 금융 정보 다시 로드
+    if (orderStatus?.isSuccess) {
+      // 약간의 지연을 주어 서버에서 데이터가 업데이트될 시간을 확보
+      const timer = setTimeout(() => {
+        fetchFinancialInfo();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+    
+    // 주문 상태 메시지가 표시된 후 일정 시간 후에 리셋
     if (orderStatus?.isSuccess || orderStatus?.error) {
       const timer = setTimeout(() => {
         resetOrderStatus();
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [orderStatus?.isSuccess, orderStatus?.error, resetOrderStatus]);
+  }, [orderStatus?.isSuccess, orderStatus?.error, resetOrderStatus, fetchFinancialInfo]);
 
-  // RSI 주문 상태 메시지 리셋
+  // RSI 주문 상태 변경 감지 및 주문가능원화 업데이트
   useEffect(() => {
+    // RSI 주문 성공 시 금융 정보 다시 로드
+    if (rsiOrderStatus?.isSuccess) {
+      // 약간의 지연을 주어 서버에서 데이터가 업데이트될 시간을 확보
+      const timer = setTimeout(() => {
+        fetchFinancialInfo();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+    
+    // RSI 주문 상태 메시지 리셋
     if (rsiOrderStatus?.isSuccess || rsiOrderStatus?.error) {
       const timer = setTimeout(() => {
         resetRSIOrderStatus();
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [rsiOrderStatus?.isSuccess, rsiOrderStatus?.error, resetRSIOrderStatus]);
+  }, [rsiOrderStatus?.isSuccess, rsiOrderStatus?.error, resetRSIOrderStatus, fetchFinancialInfo]);
 
   // 매수 버튼 클릭 핸들러
   const handleBuyClick = () => {
