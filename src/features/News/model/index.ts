@@ -112,7 +112,7 @@ export function useNewsPage() {
   // 코인 목록 가져오기
   useEffect(() => {
     const loadCoinList = async () => {
-      const data = await fetchCoinList();
+      const data = await fetchCoinList("BTC");
       setCoinList(data);
     };
     loadCoinList();

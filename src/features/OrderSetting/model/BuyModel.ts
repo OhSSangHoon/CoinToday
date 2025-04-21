@@ -27,7 +27,7 @@ export function useOrderSetting() {
   
   // 선택된 코인 정보 가져오기
   const { coin: selectedMarket } = useCoin();
-  const { orderbookData, tradeData, isConnected } = useWebsocket();
+  const { orderbookData, tradeData } = useWebsocket();
   
   // 현재가 정보
   const currentPriceInfo = useMemo(() => {
@@ -263,11 +263,11 @@ export function useOrderSetting() {
     const cashAmount = totalAmount.replace(/,/g, '');
     const cashValue = parseInt(cashAmount);
 
-    if(cashValue < 7200) {
+    if(cashValue < 7500) {
       setOrderStatus({
         isSubmitting: false,
         isSuccess: false,
-        error: "최소 주문 금액은 7200원 입니다."
+        error: "최소 주문 금액은 7500원 입니다."
       });
       return;
     }
@@ -322,11 +322,11 @@ export function useOrderSetting() {
     const cash = totalAmount.replace(/,/g, '');
     const cashValue = parseInt(cash);
 
-    if(cashValue < 7200) {
+    if(cashValue < 7500) {
       setOrderStatus({
         isSubmitting: false,
         isSuccess: false,
-        error: "최소 주문 금액은 7200원 입니다."
+        error: "최소 주문 금액은 7500원 입니다."
       });
       return;
     }
